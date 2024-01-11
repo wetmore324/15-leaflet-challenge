@@ -70,7 +70,7 @@ d3.json(url).then(function(data) {
     console.log(earthquakeData);
     L.geoJson(data, {
         pointToLayer: function (feature, latlon) {
-            return L.circleMarker(latlon).bindPopup(`${feature.id} | ${feature.properties.place}`);
+            return L.circleMarker(latlon).bindPopup(`${feature.properties.mag} | ${feature.properties.place} | ${feature.geometry.coordinates[2]}`);
             // Learned how to add multiple elements to pop up from following url: https://stackoverflow.com/questions/62837270/insert-multiple-elements-in-bindpopup-in-leaflet
         },
         style: legendInfo
