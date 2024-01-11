@@ -28,7 +28,7 @@ let baseMaps = {
 // Define the earthquake layergroup for the map
 let earthquakeData = new L.LayerGroup();
 
-// Define the overlays and link to the layergroups
+// Define the overlay and link to the layergroup
 let overlays = {
     "Earthquakes": earthquakeData
 };
