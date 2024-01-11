@@ -1,42 +1,98 @@
-function createMap(earthQuakes) {
+// Store our API endpoint as url
+const url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
+
+//collect data with d3
+d3.json(url).then(function (data) {
+    console.log(data);
+    let features = data.features;
+    console.log(features);
+});
 
 // Create the tile layer that will be the background of our map.
-let worldmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+let worldMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 });
 
-// Create a baseMaps object to hold the streetmap layer.
+// Create the map object.
+let myMap = L.map("map", {
+    center: [40, -120],
+    zoom: 3,
+    layers: [worldMap]
+});
+
+// Define the basemaps as the worldmap
 let baseMaps = {
-    "World Map": worldMap
-  };
+    "worldMap": worldMap
+};
 
-// Create an overlayMaps object to hold the earthQuakes layer.
-let overlayMaps = {
-    "Earthquakes": earthQuakes
-  };
+// Define the earthquake layergroup for the map
+let earthquakeData = new L.LayerGroup();
 
-// Create the map object with options.
-let map = L.map("map", {
-    center: [-68.3586, 19.1591],
-    zoom: 5,
-    layers: [worldMap, earthQuakes]
-  });
+// Define the overlays and link to the layergroups
+let overlays = {
+    "Earthquakes": earthquakeData
+};
 
-// Create a layer control, and pass it baseMaps and overlayMaps. Add the layer control to the map.
-L.control.layers(baseMaps, overlayMaps, {
+// Create a layer control, and pass it baseMaps and overlayMaps.
+L.control.layers(baseMaps, overlays, {
     collapsed: false
-}).addTo(map);
+}).addTo(myMap);
 
-function createMarkers(response) {
-
-    //Pull the earthquakes property from response.data.
-    let
+// Use legendInfo function to style the earthquake points on the map
+function legendInfo(features) {
+    return {
+        color: chooseColor(features.geometry.coordinates[2]),
+        radius: chooseRadius(features.properties.mag),  //sets readius based on magnitude
+        fillColor: chooseColor(features.geometry.coordinates[2]), //sets fill color to the depth of the earthquake
+        weight: 0.5,
+        opacity: 0.5,
+        fillOpacity: 1
+    };
 }
 
-// Use this link to get the GeoJson data
-let link = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
+// Creating the fillColor of the earthquake based on depth
+function chooseColor(depth) {
+    if (depth <= 10) return "red";
+    else if (depth > 10 & depth <= 30) return "orange";
+    else if (depth > 30 & depth <= 50) return "yellow";
+    else if (depth > 50 & depth <= 70) return "green";
+    else if (depth > 70 & depth <= 90) return "blue";
+    else return "purple";
+};
 
-// Perform an API call to the Earthquake Hazards Program API to get the earthquake information. Call createMarkers when it completes.
-d3.json(link).then(createMarkers);
+// Creating function to determine radius of each earthquake marker
+function chooseRadius(magnitude) {
+    return magnitude;
+};
 
-}
+// Get the json data with d3.
+d3.json(url).then(function(data) {
+    console.log(earthquakeData);
+    L.geoJson(data, {
+        pointToLayer: function (feature, latlon) {
+            return L.circleMarker(latlon).bindPopup(`${feature.id} | ${feature.properties.place}`);
+            // Learned how to add multiple elements to pop up from following url: https://stackoverflow.com/questions/62837270/insert-multiple-elements-in-bindpopup-in-leaflet
+        },
+        style: legendInfo
+    }).addTo(earthquakeData);
+    earthquakeData.addTo(myMap);
+});
+
+    // Learned how to better sytle legend on Leaflet from the following url: https://codepen.io/haakseth/pen/KQbjdO
+    var legend = L.control({position: 'bottomright'});
+
+    legend.onAdd = function (myMap) {
+        var div = L.DomUtil.create('div', 'info legend');
+            div.innerHTML += "<h4>Depth Legend</h4>";
+            div.innerHTML += '<i style="background: red"></i><span>(-10-10)</span><br>';
+            div.innerHTML += '<i style="background: orange"></i><span>(10-30)</span><br>';
+            div.innerHTML += '<i style="background: yellow"></i><span>(30-50)</span><br>';
+            div.innerHTML += '<i style="background: green"></i><span>(50-70)</span><br>';
+            div.innerHTML += '<i style="background: blue"></i><span>(70-90)</span><br>';
+            div.innerHTML += '<i style="background: purple"></i><span>(90+)</span><br>';
+   
+        return div;
+    };
+      
+    // Add legend to map
+    legend.addTo(myMap);
